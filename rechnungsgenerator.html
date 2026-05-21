@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rechnungsgenerator</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+/* ─── RESET & VARS ─── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --ink:     #0f0e0c;
+  --paper:   #faf8f4;
+  --cream:   #f2efe9;
+  --rule:    #ddd8cf;
+  --faint:   #e8e4dc;
+  --muted:   #9a9388;
+  --accent:  #1a3a2a;
+  --gold:    #b8892a;
+  --red:     #8b2020;
+  --green:   #1a3a2a;
+  --sans:    'IBM Plex Sans', sans-serif;
+  --mono:    'IBM Plex Mono', monospace;
+  --display: 'Playfair Display', serif;
+  --r:       3px;
+  --shadow:  0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
+}
+
+html { font-size: 15px; }
+
+body {
+  font-family: var(--sans);
+  background: var(--cream);
+  color: var(--ink);
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  grid-template-rows: auto 1fr;
+  grid-template-areas: "topbar topbar" "sidebar main";
+}
+
+/* ─── TOPBAR ─── */
+.topbar {
+  grid-area: topbar;
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
+  height: 56px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.topbar-brand {
+  font-family: var(--display);
+  font-size: 1.25rem;
+  letter-spacing: .01em;
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+}
+
+.topbar-brand .dot {
+  width: 8px; height: 8px;
+  background: var(--gold);
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.topbar-actions { display: flex; gap: .5rem; }
+
+.btn {
+  font-family: var(--mono);
+  font-size: .72rem;
+  font-weight: 500;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  border: none;
+  border-radius: var(--r);
+  padding: .45rem .9rem;
+  cursor: pointer;
+  transition: all .15s;
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+}
+
+.btn-ghost {
+  background: rgba(255,255,255,.1);
+  color: rgba(255,255,255,.85);
+  border: 1px solid rgba(255,255,255,.2);
+}
+.btn-ghost:hover { background: rgba(255,255,255,.18); }
+
+.btn-gold {
+  background: var(--gold);
+  color: #fff;
+}
+.btn-gold:hover { background: #a07820; }
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+}
+.btn-primary:hover { background: #0f2218; }
+
+.btn-danger {
+  background: transparent;
+  color: var(--red);
+  border: 1px solid var(--rule);
+  font-size: .68rem;
+}
+.btn-danger:hover { background: #f5ebe8; border-color: var(--red); }
+
+.btn-sm {
+  font-size: .68rem;
+  padding: .3rem .65rem;
+}
+
+/* ─── SIDEBAR ─── */
+.sidebar {
+  grid-area: sidebar;
+  background: var(--paper);
+  border-right: 1px solid var(--rule);
+  overflow-y: auto;
+  height: calc(100vh - 56px);
+  position: sticky;
+  top: 56px;
+}
+
+.sidebar-section {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--faint);
+}
+
+.sidebar-title {
+  font-family: var(--mono);
+  font-size: .65rem;
+  font-weight: 500;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.field-group { display: flex; flex-direction: column; gap: .65rem; }
+
+.field { display: flex; flex-direction: column; gap: .3rem; }
+
+.field label {
+  font-size: .68rem;
+  font-family: var(--mono);
+  color: var(--muted);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.field input, .field select, .field textarea {
+  font-family: var(--mono);
+  font-size: .82rem;
+  background: var(--cream);
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+  padding: .45rem .65rem;
+  color: var(--ink);
+  outline: none;
+  width: 100%;
+  transition: border-color .15s;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus { border-color: var(--accent); }
+
+.field textarea { resize: vertical; min-height: 60px; }
+
+/* ─── CUSTOMER LIST ─── */
+.customer-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .5rem .7rem;
+  border-radius: var(--r);
+  border: 1px solid var(--faint);
+  margin-bottom: .4rem;
+  cursor: pointer;
+  transition: all .12s;
+  background: var(--paper);
+}
+
+.customer-item:hover { border-color: var(--accent); }
+.customer-item.selected { border-color: var(--accent); background: #e8f0e7; }
+
+.customer-item .name {
+  font-size: .82rem;
+  font-weight: 500;
+}
+
+.customer-item .sub {
+  font-size: .7rem;
+  color: var(--muted);
+  font-family: var(--mono);
+}
+
+/* ─── MAIN AREA ─── */
+.main {
+  grid-area: main;
+  padding: 2rem 2.5rem;
+  overflow-y: auto;
+  height: calc(100vh - 56px);
+}
+
+/* ─── INVOICE EDITOR ─── */
+.invoice-editor {
+  max-width: 780px;
+  margin: 0 auto;
+}
+
+.invoice-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.meta-card {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+  padding: 1.25rem 1.5rem;
+}
+
+.meta-card .meta-label {
+  font-family: var(--mono);
+  font-size: .65rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: .5rem;
+}
+
+.meta-card .meta-value {
+  font-family: var(--display);
+  font-size: 1.4rem;
+  letter-spacing: -.01em;
+  color: var(--ink);
+}
+
+.meta-card .meta-value.gold { color: var(--gold); }
+
+.meta-card .meta-sub {
+  font-family: var(--mono);
+  font-size: .72rem;
+  color: var(--muted);
+  margin-top: .25rem;
+}
+
+/* inline edit fields inside meta card */
+.meta-card input {
+  font-family: var(--mono);
+  font-size: .82rem;
+  border: none;
+  border-bottom: 1px dashed var(--rule);
+  background: transparent;
+  outline: none;
+  width: 100%;
+  padding: .15rem 0;
+  color: var(--ink);
+  transition: border-color .15s;
+}
+.meta-card input:focus { border-color: var(--accent); }
+
+/* ─── POSITIONS TABLE ─── */
+.positions-wrap {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+  margin-bottom: 1.25rem;
+  overflow: hidden;
+}
+
+.positions-head {
+  display: grid;
+  grid-template-columns: 2fr 80px 110px 110px 44px;
+  gap: 0;
+  background: var(--cream);
+  border-bottom: 1px solid var(--rule);
+  padding: .55rem 1.25rem;
+}
+
+.positions-head span {
+  font-family: var(--mono);
+  font-size: .63rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.positions-head span:not(:first-child) { text-align: right; }
+
+.position-row {
+  display: grid;
+  grid-template-columns: 2fr 80px 110px 110px 44px;
+  gap: 0;
+  padding: .6rem 1.25rem;
+  border-bottom: 1px solid var(--faint);
+  align-items: center;
+  transition: background .1s;
+}
+.position-row:last-child { border-bottom: none; }
+.position-row:hover { background: var(--cream); }
+
+.position-row input {
+  font-family: var(--mono);
+  font-size: .8rem;
+  border: none;
+  background: transparent;
+  outline: none;
+  color: var(--ink);
+  width: 100%;
+  padding: .1rem 0;
+  border-bottom: 1px solid transparent;
+  transition: border-color .15s;
+}
+.position-row input:focus { border-color: var(--rule); }
+
+.position-row input[type=number] { text-align: right; }
+
+.position-row .pos-total {
+  font-family: var(--mono);
+  font-size: .8rem;
+  text-align: right;
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.position-row .pos-del {
+  background: none;
+  border: none;
+  color: var(--rule);
+  cursor: pointer;
+  font-size: 1rem;
+  text-align: right;
+  width: 100%;
+  transition: color .15s;
+  padding: 0;
+}
+.position-row .pos-del:hover { color: var(--red); }
+
+.add-position-row {
+  padding: .65rem 1.25rem;
+  border-top: 1px solid var(--faint);
+}
+
+/* ─── TOTALS ─── */
+.totals-block {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 2rem;
+}
+
+.totals-table {
+  min-width: 280px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+
+.totals-row {
+  display: flex;
+  justify-content: space-between;
+  padding: .6rem 1.25rem;
+  font-family: var(--mono);
+  font-size: .8rem;
+  border-bottom: 1px solid var(--faint);
+}
+.totals-row:last-child { border-bottom: none; }
+.totals-row .label { color: var(--muted); }
+.totals-row .value { font-weight: 500; }
+
+.totals-row.grand {
+  background: var(--accent);
+  color: #fff;
+  font-size: .9rem;
+}
+.totals-row.grand .label { color: rgba(255,255,255,.7); }
+
+.vat-select {
+  font-family: var(--mono);
+  font-size: .75rem;
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+  padding: .25rem .5rem;
+  background: var(--cream);
+  color: var(--ink);
+  outline: none;
+  cursor: pointer;
+}
+
+/* ─── NOTES ─── */
+.notes-area {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.notes-area label {
+  font-family: var(--mono);
+  font-size: .65rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  display: block;
+  margin-bottom: .5rem;
+}
+
+.notes-area textarea {
+  font-family: var(--mono);
+  font-size: .8rem;
+  background: transparent;
+  border: none;
+  outline: none;
+  width: 100%;
+  resize: none;
+  color: var(--ink);
+  min-height: 60px;
+  line-height: 1.6;
+}
+
+/* ─── INVOICE NUMBERS ─── */
+.inv-number-badge {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: .7rem;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 20px;
+  padding: .15rem .6rem;
+  letter-spacing: .04em;
+}
+
+/* ─── STATUS CHIPS ─── */
+.chip {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: .63rem;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  padding: .18rem .55rem;
+  border-radius: 20px;
+  font-weight: 500;
+}
+.chip-draft  { background: var(--faint); color: var(--muted); }
+.chip-sent   { background: #e8f0e7; color: var(--accent); }
+.chip-paid   { background: #e8f0e7; color: var(--accent); border: 1px solid var(--accent); }
+.chip-overdue{ background: #f5ebe8; color: var(--red); }
+
+/* ─── INVOICE HISTORY ─── */
+.history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .65rem .7rem;
+  border-radius: var(--r);
+  border: 1px solid var(--faint);
+  margin-bottom: .4rem;
+  cursor: pointer;
+  transition: all .12s;
+  background: var(--paper);
+}
+.history-item:hover { border-color: var(--rule); }
+.history-item.active { border-color: var(--accent); background: #e8f0e7; }
+.history-item .hi-num { font-family: var(--mono); font-size: .72rem; color: var(--muted); }
+.history-item .hi-name { font-size: .82rem; font-weight: 500; margin-bottom: .1rem; }
+.history-item .hi-amount { font-family: var(--mono); font-size: .8rem; font-weight: 500; }
+
+/* ─── SENDER FIELDS ─── */
+.sender-preview {
+  font-family: var(--mono);
+  font-size: .72rem;
+  color: var(--muted);
+  line-height: 1.7;
+  padding: .5rem 0;
+}
+
+/* ─── PRINT / PDF ─── */
+@media print {
+  body {
+    display: block;
+    background: #fff;
+    font-size: 11pt;
+  }
+
+  .topbar, .sidebar, .add-position-row,
+  .pos-del, .btn, .notes-area textarea + *,
+  .invoice-meta-actions { display: none !important; }
+
+  .main {
+    height: auto;
+    overflow: visible;
+    padding: 0;
+  }
+
+  .invoice-editor { max-width: 100%; margin: 0; }
+
+  .print-invoice {
+    padding: 2cm;
+    background: #fff;
+    color: #000;
+  }
+
+  .print-hide { display: none !important; }
+  .print-show { display: block !important; }
+}
+
+/* ─── PRINT PREVIEW BLOCK ─── */
+.print-invoice {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+  padding: 2.5rem 3rem;
+  box-shadow: var(--shadow);
+  margin-bottom: 2rem;
+}
+
+.pi-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid var(--ink);
+  margin-bottom: 2rem;
+}
+
+.pi-brand {
+  font-family: var(--display);
+  font-size: 1.6rem;
+  color: var(--ink);
+  margin-bottom: .2rem;
+}
+
+.pi-sender-addr {
+  font-family: var(--mono);
+  font-size: .72rem;
+  color: var(--muted);
+  line-height: 1.8;
+}
+
+.pi-inv-block { text-align: right; }
+
+.pi-inv-label {
+  font-family: var(--mono);
+  font-size: .63rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.pi-inv-num {
+  font-family: var(--display);
+  font-size: 2rem;
+  color: var(--accent);
+  letter-spacing: -.02em;
+  margin: .1rem 0;
+}
+
+.pi-inv-date {
+  font-family: var(--mono);
+  font-size: .72rem;
+  color: var(--muted);
+}
+
+.pi-bill-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.pi-bill-block .block-label {
+  font-family: var(--mono);
+  font-size: .63rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: .5rem;
+  padding-bottom: .35rem;
+  border-bottom: 1px solid var(--faint);
+}
+
+.pi-bill-block .block-content {
+  font-family: var(--mono);
+  font-size: .78rem;
+  line-height: 1.8;
+}
+
+.pi-items-head {
+  display: grid;
+  grid-template-columns: 2.5fr 70px 120px 120px;
+  padding: .5rem .75rem;
+  background: var(--ink);
+  color: #fff;
+  border-radius: var(--r) var(--r) 0 0;
+  font-family: var(--mono);
+  font-size: .63rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.pi-items-head span:not(:first-child) { text-align: right; }
+
+.pi-item-row {
+  display: grid;
+  grid-template-columns: 2.5fr 70px 120px 120px;
+  padding: .6rem .75rem;
+  border-bottom: 1px solid var(--faint);
+  font-family: var(--mono);
+  font-size: .78rem;
+}
+
+.pi-item-row:last-child { border-bottom: none; }
+.pi-item-row span:not(:first-child) { text-align: right; }
+
+.pi-items-wrap {
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+
+.pi-totals {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 2rem;
+}
+
+.pi-totals-inner {
+  min-width: 260px;
+}
+
+.pi-total-row {
+  display: flex;
+  justify-content: space-between;
+  padding: .45rem 0;
+  font-family: var(--mono);
+  font-size: .78rem;
+  border-bottom: 1px solid var(--faint);
+}
+
+.pi-total-row:last-child { border-bottom: none; }
+.pi-total-row .k { color: var(--muted); }
+
+.pi-total-row.grand-total {
+  padding-top: .75rem;
+  font-size: .95rem;
+  font-weight: 500;
+}
+
+.pi-total-row.grand-total .k { color: var(--ink); }
+
+.pi-notes {
+  font-family: var(--mono);
+  font-size: .73rem;
+  color: var(--muted);
+  line-height: 1.8;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--faint);
+}
+
+/* ─── EMPTY STATE ─── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 60%;
+  gap: 1rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.empty-state .icon { font-size: 3rem; opacity: .3; }
+.empty-state p { font-size: .85rem; font-family: var(--mono); }
+
+/* ─── MODAL ─── */
+.modal-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+
+.modal {
+  background: var(--paper);
+  border-radius: 6px;
+  padding: 2rem;
+  width: 420px;
+  max-width: 95vw;
+  box-shadow: 0 8px 32px rgba(0,0,0,.18);
+  animation: modalIn .18s ease;
+}
+
+@keyframes modalIn {
+  from { transform: translateY(10px); opacity: 0; }
+  to   { transform: none; opacity: 1; }
+}
+
+.modal h3 {
+  font-family: var(--display);
+  font-size: 1.3rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: .75rem;
+  border-bottom: 1px solid var(--faint);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: .5rem;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--faint);
+}
+
+.section-toolbar { display: flex; gap: .4rem; }
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 10px; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════ TOPBAR ═══════════ -->
+<header class="topbar">
+  <div class="topbar-brand">
+    <span class="dot"></span>
+    Rechnungsgenerator
+  </div>
+  <div class="topbar-actions">
+    <button class="btn btn-ghost" onclick="openCustomerModal()">＋ Kunde</button>
+    <button class="btn btn-ghost" onclick="newInvoice()">＋ Rechnung</button>
+    <button class="btn btn-gold" onclick="printInvoice()">⬇ PDF Export</button>
+  </div>
+</header>
+
+<!-- ═══════════ SIDEBAR ═══════════ -->
+<aside class="sidebar">
+
+  <!-- Sender -->
+  <div class="sidebar-section">
+    <div class="sidebar-title">Mein Unternehmen</div>
+    <div class="field-group">
+      <div class="field">
+        <label>Firmenname</label>
+        <input type="text" id="s-company" placeholder="Muster GmbH" oninput="renderPreview()">
+      </div>
+      <div class="field">
+        <label>Adresse</label>
+        <textarea id="s-address" rows="3" placeholder="Musterstraße 1&#10;12345 Berlin" oninput="renderPreview()"></textarea>
+      </div>
+      <div class="field">
+        <label>USt-IdNr.</label>
+        <input type="text" id="s-vat" placeholder="DE123456789" oninput="renderPreview()">
+      </div>
+      <div class="field">
+        <label>IBAN</label>
+        <input type="text" id="s-iban" placeholder="DE89 3704 0044 0532 0130 00" oninput="renderPreview()">
+      </div>
+    </div>
+  </div>
+
+  <!-- Customers -->
+  <div class="sidebar-section">
+    <div class="sidebar-title">
+      Kunden
+      <button class="btn btn-sm btn-primary" onclick="openCustomerModal()">＋</button>
+    </div>
+    <div id="customer-list">
+      <div style="font-family:var(--mono);font-size:.72rem;color:var(--muted);">Noch keine Kunden.</div>
+    </div>
+  </div>
+
+  <!-- Invoice History -->
+  <div class="sidebar-section">
+    <div class="sidebar-title">Rechnungen</div>
+    <div id="history-list">
+      <div style="font-family:var(--mono);font-size:.72rem;color:var(--muted);">Noch keine Rechnungen.</div>
+    </div>
+  </div>
+
+</aside>
+
+<!-- ═══════════ MAIN ═══════════ -->
+<main class="main" id="main-area">
+  <div class="empty-state">
+    <div class="icon">📄</div>
+    <p>Klicke auf „+ Rechnung" um zu beginnen</p>
+  </div>
+</main>
+
+<!-- ═══════════ CUSTOMER MODAL ═══════════ -->
+<div class="modal-overlay" id="customer-modal">
+  <div class="modal">
+    <h3>Neuer Kunde</h3>
+    <div class="field-group">
+      <div class="field"><label>Firmenname / Name</label><input type="text" id="cm-name" placeholder="Kunde AG"></div>
+      <div class="field"><label>Anschrift</label><textarea id="cm-address" rows="3" placeholder="Straße, PLZ Ort"></textarea></div>
+      <div class="field"><label>E-Mail</label><input type="email" id="cm-email" placeholder="kontakt@kunde.de"></div>
+      <div class="field"><label>USt-IdNr. (optional)</label><input type="text" id="cm-vat" placeholder="DE..."></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" style="background:var(--faint);color:var(--ink);border:none;" onclick="closeCustomerModal()">Abbrechen</button>
+      <button class="btn btn-primary" onclick="saveCustomer()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════
+let state = {
+  sender: { company: '', address: '', vat: '', iban: '' },
+  customers: [],
+  invoices: [],
+  currentInvoiceId: null,
+  nextCustomerId: 1,
+  nextInvoiceSeq: 1,
+};
+
+// ── Persistence ──
+function save() {
+  try { localStorage.setItem('rg_v2', JSON.stringify(state)); } catch(e) {}
+}
+
+function load() {
+  try {
+    const s = localStorage.getItem('rg_v2');
+    if (s) state = { ...state, ...JSON.parse(s) };
+  } catch(e) {}
+  // Sync sender fields
+  document.getElementById('s-company').value = state.sender.company || '';
+  document.getElementById('s-address').value = state.sender.address || '';
+  document.getElementById('s-vat').value = state.sender.vat || '';
+  document.getElementById('s-iban').value = state.sender.iban || '';
+}
+
+// ── Formatters ──
+const eur = n => Number(n).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+const today = () => new Date().toLocaleDateString('de-DE');
+const isoToDE = s => s ? new Date(s).toLocaleDateString('de-DE') : '';
+
+// ── Invoice number logic ──
+function nextInvNumber() {
+  const year = new Date().getFullYear();
+  const seq  = String(state.nextInvoiceSeq).padStart(4, '0');
+  return `${year}-${seq}`;
+}
+
+// ══════════════════════════════════════════
+// SENDER
+// ══════════════════════════════════════════
+function renderPreview() {
+  state.sender.company = document.getElementById('s-company').value;
+  state.sender.address = document.getElementById('s-address').value;
+  state.sender.vat     = document.getElementById('s-vat').value;
+  state.sender.iban    = document.getElementById('s-iban').value;
+  save();
+  if (state.currentInvoiceId) renderInvoiceEditor();
+}
+
+// ══════════════════════════════════════════
+// CUSTOMERS
+// ══════════════════════════════════════════
+function openCustomerModal(prefill) {
+  document.getElementById('cm-name').value = prefill?.name || '';
+  document.getElementById('cm-address').value = prefill?.address || '';
+  document.getElementById('cm-email').value = prefill?.email || '';
+  document.getElementById('cm-vat').value = prefill?.vat || '';
+  document.getElementById('customer-modal').classList.add('open');
+  setTimeout(() => document.getElementById('cm-name').focus(), 50);
+}
+
+function closeCustomerModal() {
+  document.getElementById('customer-modal').classList.remove('open');
+}
+
+function saveCustomer() {
+  const name = document.getElementById('cm-name').value.trim();
+  if (!name) { alert('Bitte Namen eingeben.'); return; }
+  const c = {
+    id: state.nextCustomerId++,
+    name,
+    address: document.getElementById('cm-address').value.trim(),
+    email:   document.getElementById('cm-email').value.trim(),
+    vat:     document.getElementById('cm-vat').value.trim(),
+  };
+  state.customers.push(c);
+  closeCustomerModal();
+  save();
+  renderCustomerList();
+}
+
+function renderCustomerList() {
+  const el = document.getElementById('customer-list');
+  if (!state.customers.length) {
+    el.innerHTML = '<div style="font-family:var(--mono);font-size:.72rem;color:var(--muted);">Noch keine Kunden.</div>';
+    return;
+  }
+  el.innerHTML = state.customers.map(c => {
+    const inv = state.currentInvoiceId ? getInvoice(state.currentInvoiceId) : null;
+    const sel = inv && inv.customerId === c.id;
+    return `<div class="customer-item ${sel ? 'selected' : ''}" onclick="selectCustomer(${c.id})">
+      <div>
+        <div class="name">${c.name}</div>
+        <div class="sub">${c.email || '—'}</div>
+      </div>
+      <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteCustomer(${c.id})">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function deleteCustomer(id) {
+  if (!confirm('Kunden wirklich löschen?')) return;
+  state.customers = state.customers.filter(c => c.id !== id);
+  save();
+  renderCustomerList();
+}
+
+function selectCustomer(id) {
+  if (!state.currentInvoiceId) { alert('Bitte zuerst eine Rechnung erstellen.'); return; }
+  const inv = getInvoice(state.currentInvoiceId);
+  if (inv) { inv.customerId = id; save(); renderInvoiceEditor(); renderCustomerList(); }
+}
+
+// ══════════════════════════════════════════
+// INVOICES
+// ══════════════════════════════════════════
+function getInvoice(id) { return state.invoices.find(i => i.id === id); }
+
+function newInvoice() {
+  const id = Date.now();
+  const inv = {
+    id,
+    number: nextInvNumber(),
+    date: new Date().toISOString().slice(0,10),
+    dueDate: new Date(Date.now() + 14*86400000).toISOString().slice(0,10),
+    customerId: null,
+    positions: [],
+    vatRate: 19,
+    notes: 'Bitte überweisen Sie den Betrag innerhalb von 14 Tagen auf das unten angegebene Konto.',
+    status: 'draft',
+  };
+  state.nextInvoiceSeq++;
+  state.invoices.unshift(inv);
+  state.currentInvoiceId = id;
+  save();
+  renderHistoryList();
+  renderCustomerList();
+  renderInvoiceEditor();
+}
+
+function loadInvoice(id) {
+  state.currentInvoiceId = id;
+  renderHistoryList();
+  renderCustomerList();
+  renderInvoiceEditor();
+}
+
+function deleteInvoice(id) {
+  if (!confirm('Rechnung wirklich löschen?')) return;
+  state.invoices = state.invoices.filter(i => i.id !== id);
+  if (state.currentInvoiceId === id) state.currentInvoiceId = null;
+  save();
+  renderHistoryList();
+  if (!state.currentInvoiceId) {
+    document.getElementById('main-area').innerHTML = `<div class="empty-state"><div class="icon">📄</div><p>Klicke auf „+ Rechnung" um zu beginnen</p></div>`;
+  }
+}
+
+function renderHistoryList() {
+  const el = document.getElementById('history-list');
+  if (!state.invoices.length) {
+    el.innerHTML = '<div style="font-family:var(--mono);font-size:.72rem;color:var(--muted);">Noch keine Rechnungen.</div>';
+    return;
+  }
+  el.innerHTML = state.invoices.map(inv => {
+    const c = state.customers.find(c => c.id === inv.customerId);
+    const net = inv.positions.reduce((s,p) => s + p.qty * p.price, 0);
+    const gross = net * (1 + inv.vatRate / 100);
+    const active = inv.id === state.currentInvoiceId;
+    const statusMap = { draft: 'Entwurf', sent: 'Versendet', paid: 'Bezahlt', overdue: 'Überfällig' };
+    const chipMap   = { draft: 'chip-draft', sent: 'chip-sent', paid: 'chip-paid', overdue: 'chip-overdue' };
+    return `<div class="history-item ${active ? 'active' : ''}" onclick="loadInvoice(${inv.id})">
+      <div>
+        <div class="hi-num">${inv.number} &nbsp;<span class="chip ${chipMap[inv.status]}">${statusMap[inv.status]}</span></div>
+        <div class="hi-name">${c ? c.name : '— Kein Kunde —'}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="hi-amount">${eur(gross)}</div>
+        <button class="btn btn-sm btn-danger" style="margin-top:.25rem" onclick="event.stopPropagation();deleteInvoice(${inv.id})">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════
+// INVOICE EDITOR
+// ══════════════════════════════════════════
+function renderInvoiceEditor() {
+  const inv = getInvoice(state.currentInvoiceId);
+  if (!inv) return;
+  const customer = state.customers.find(c => c.id === inv.customerId);
+  const s = state.sender;
+
+  const net   = inv.positions.reduce((sum, p) => sum + p.qty * p.price, 0);
+  const vat   = net * inv.vatRate / 100;
+  const gross = net + vat;
+
+  const statusMap = { draft: 'Entwurf', sent: 'Versendet', paid: 'Bezahlt', overdue: 'Überfällig' };
+  const chipMap   = { draft: 'chip-draft', sent: 'chip-sent', paid: 'chip-paid', overdue: 'chip-overdue' };
+
+  document.getElementById('main-area').innerHTML = `
+    <div class="invoice-editor" id="invoice-editor">
+
+      <!-- EDITOR META -->
+      <div class="invoice-meta print-hide" style="margin-bottom:1rem;">
+        <div class="meta-card">
+          <div class="meta-label">Rechnungsnummer</div>
+          <div class="meta-value gold">${inv.number}</div>
+          <div class="meta-sub">Status: <span class="chip ${chipMap[inv.status]}">${statusMap[inv.status]}</span></div>
+        </div>
+        <div class="meta-card">
+          <div class="meta-label">Einstellungen</div>
+          <div style="display:flex;flex-direction:column;gap:.5rem;margin-top:.25rem;">
+            <div style="display:flex;align-items:center;gap:.5rem;">
+              <span style="font-family:var(--mono);font-size:.7rem;color:var(--muted);min-width:80px">Datum</span>
+              <input type="date" value="${inv.date}" onchange="updateInvField('date',this.value)" style="font-family:var(--mono);font-size:.78rem;border:1px solid var(--rule);border-radius:3px;padding:.2rem .4rem;background:var(--cream);color:var(--ink);outline:none;">
+            </div>
+            <div style="display:flex;align-items:center;gap:.5rem;">
+              <span style="font-family:var(--mono);font-size:.7rem;color:var(--muted);min-width:80px">Fällig bis</span>
+              <input type="date" value="${inv.dueDate}" onchange="updateInvField('dueDate',this.value)" style="font-family:var(--mono);font-size:.78rem;border:1px solid var(--rule);border-radius:3px;padding:.2rem .4rem;background:var(--cream);color:var(--ink);outline:none;">
+            </div>
+            <div style="display:flex;align-items:center;gap:.5rem;">
+              <span style="font-family:var(--mono);font-size:.7rem;color:var(--muted);min-width:80px">MwSt.</span>
+              <select class="vat-select" onchange="updateInvField('vatRate',+this.value)">
+                ${[0,7,19].map(r => `<option value="${r}" ${r===inv.vatRate?'selected':''}>${r}%</option>`).join('')}
+              </select>
+            </div>
+            <div style="display:flex;align-items:center;gap:.5rem;">
+              <span style="font-family:var(--mono);font-size:.7rem;color:var(--muted);min-width:80px">Status</span>
+              <select class="vat-select" onchange="updateInvField('status',this.value)">
+                ${['draft','sent','paid','overdue'].map(s => `<option value="${s}" ${s===inv.status?'selected':''}>${statusMap[s]}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── PRINT PREVIEW ── -->
+      <div class="print-invoice" id="print-invoice">
+
+        <!-- Header -->
+        <div class="pi-header">
+          <div>
+            <div class="pi-brand">${s.company || 'Ihr Unternehmen'}</div>
+            <div class="pi-sender-addr">${(s.address || '').replace(/\n/g,'<br>')}${s.vat ? '<br>USt-IdNr.: ' + s.vat : ''}</div>
+          </div>
+          <div class="pi-inv-block">
+            <div class="pi-inv-label">Rechnung</div>
+            <div class="pi-inv-num">${inv.number}</div>
+            <div class="pi-inv-date">Datum: ${isoToDE(inv.date)}<br>Fällig: ${isoToDE(inv.dueDate)}</div>
+          </div>
+        </div>
+
+        <!-- Bill-to / Bill-from -->
+        <div class="pi-bill-section">
+          <div class="pi-bill-block">
+            <div class="block-label">Rechnungsempfänger</div>
+            <div class="block-content">
+              ${customer
+                ? `<strong>${customer.name}</strong><br>${(customer.address||'').replace(/\n/g,'<br>')}${customer.email ? '<br>' + customer.email : ''}${customer.vat ? '<br>USt-IdNr.: ' + customer.vat : ''}`
+                : '<span style="color:var(--muted);">— Kein Kunde ausgewählt —</span>'}
+            </div>
+          </div>
+          <div class="pi-bill-block">
+            <div class="block-label">Bankverbindung</div>
+            <div class="block-content">
+              ${s.iban ? `IBAN: ${s.iban}` : '<span style="color:var(--muted);">— Keine IBAN hinterlegt —</span>'}
+            </div>
+          </div>
+        </div>
+
+        <!-- Items -->
+        <div class="pi-items-wrap">
+          <div class="pi-items-head">
+            <span>Beschreibung</span>
+            <span>Menge</span>
+            <span>Einzelpreis</span>
+            <span>Gesamt</span>
+          </div>
+          ${inv.positions.length
+            ? inv.positions.map(p => `
+              <div class="pi-item-row">
+                <span>${p.desc || '—'}</span>
+                <span>${p.qty}</span>
+                <span>${eur(p.price)}</span>
+                <span>${eur(p.qty * p.price)}</span>
+              </div>`).join('')
+            : `<div class="pi-item-row"><span style="color:var(--muted);font-style:italic;">Noch keine Positionen</span><span></span><span></span><span></span></div>`
+          }
+        </div>
+
+        <!-- Totals -->
+        <div class="pi-totals">
+          <div class="pi-totals-inner">
+            <div class="pi-total-row"><span class="k">Nettobetrag</span><span>${eur(net)}</span></div>
+            <div class="pi-total-row"><span class="k">zzgl. MwSt. ${inv.vatRate}%</span><span>${eur(vat)}</span></div>
+            <div class="pi-total-row grand-total"><span class="k">Gesamtbetrag</span><span><strong>${eur(gross)}</strong></span></div>
+          </div>
+        </div>
+
+        <!-- Notes -->
+        <div class="pi-notes">${inv.notes || ''}</div>
+      </div>
+
+      <!-- ── POSITION EDITOR ── -->
+      <div class="print-hide">
+        <div class="positions-wrap">
+          <div class="positions-head">
+            <span>Beschreibung</span>
+            <span style="text-align:right">Menge</span>
+            <span style="text-align:right">Einzelpreis</span>
+            <span style="text-align:right">Gesamt</span>
+            <span></span>
+          </div>
+          <div id="pos-list">
+            ${inv.positions.map((p, i) => positionRow(p, i)).join('')}
+          </div>
+          <div class="add-position-row">
+            <button class="btn btn-sm" style="background:var(--faint);color:var(--ink);border:1px dashed var(--rule);" onclick="addPosition()">＋ Position hinzufügen</button>
+          </div>
+        </div>
+
+        <!-- Totals editor -->
+        <div class="totals-block">
+          <div class="totals-table">
+            <div class="totals-row"><span class="label">Netto</span><span class="value">${eur(net)}</span></div>
+            <div class="totals-row"><span class="label">MwSt. ${inv.vatRate}%</span><span class="value">${eur(vat)}</span></div>
+            <div class="totals-row grand"><span class="label">Gesamt</span><span class="value">${eur(gross)}</span></div>
+          </div>
+        </div>
+
+        <!-- Notes editor -->
+        <div class="notes-area">
+          <label>Zahlungshinweis / Notiz</label>
+          <textarea rows="3" oninput="updateInvField('notes',this.value)">${inv.notes || ''}</textarea>
+        </div>
+      </div>
+
+    </div>
+  `;
+}
+
+function positionRow(p, i) {
+  return `<div class="position-row" id="pos-${p.id}">
+    <input type="text" value="${p.desc}" placeholder="Leistungsbeschreibung" oninput="updatePos(${p.id},'desc',this.value)">
+    <input type="number" value="${p.qty}" min="0" step="1" oninput="updatePos(${p.id},'qty',+this.value)">
+    <input type="number" value="${p.price}" min="0" step="0.01" oninput="updatePos(${p.id},'price',+this.value)">
+    <span class="pos-total">${eur(p.qty * p.price)}</span>
+    <button class="pos-del" onclick="deletePos(${p.id})">×</button>
+  </div>`;
+}
+
+function addPosition() {
+  const inv = getInvoice(state.currentInvoiceId);
+  if (!inv) return;
+  inv.positions.push({ id: Date.now(), desc: '', qty: 1, price: 0 });
+  save();
+  renderInvoiceEditor();
+  // focus last desc
+  setTimeout(() => {
+    const inputs = document.querySelectorAll('#pos-list .position-row input[type=text]');
+    if (inputs.length) inputs[inputs.length - 1].focus();
+  }, 50);
+}
+
+function deletePos(posId) {
+  const inv = getInvoice(state.currentInvoiceId);
+  if (!inv) return;
+  inv.positions = inv.positions.filter(p => p.id !== posId);
+  save();
+  renderInvoiceEditor();
+}
+
+function updatePos(posId, field, val) {
+  const inv = getInvoice(state.currentInvoiceId);
+  if (!inv) return;
+  const pos = inv.positions.find(p => p.id === posId);
+  if (pos) pos[field] = val;
+  // live update total cell + summary without full re-render
+  const net   = inv.positions.reduce((s, p) => s + p.qty * p.price, 0);
+  const vat   = net * inv.vatRate / 100;
+  const gross = net + vat;
+
+  // update pos total cell
+  const row = document.getElementById('pos-' + posId);
+  if (row) row.querySelector('.pos-total').textContent = eur(pos.qty * pos.price);
+
+  // update totals block (re-render only totals)
+  const totalsEl = document.querySelector('.totals-block .totals-table');
+  if (totalsEl) {
+    totalsEl.innerHTML = `
+      <div class="totals-row"><span class="label">Netto</span><span class="value">${eur(net)}</span></div>
+      <div class="totals-row"><span class="label">MwSt. ${inv.vatRate}%</span><span class="value">${eur(vat)}</span></div>
+      <div class="totals-row grand"><span class="label">Gesamt</span><span class="value">${eur(gross)}</span></div>`;
+  }
+
+  // update print preview totals
+  const piTotals = document.querySelector('.pi-totals-inner');
+  if (piTotals) {
+    piTotals.innerHTML = `
+      <div class="pi-total-row"><span class="k">Nettobetrag</span><span>${eur(net)}</span></div>
+      <div class="pi-total-row"><span class="k">zzgl. MwSt. ${inv.vatRate}%</span><span>${eur(vat)}</span></div>
+      <div class="pi-total-row grand-total"><span class="k">Gesamtbetrag</span><span><strong>${eur(gross)}</strong></span></div>`;
+  }
+
+  // update print preview items
+  const piItems = document.querySelector('.pi-items-wrap');
+  if (piItems && inv.positions.length) {
+    piItems.innerHTML = `
+      <div class="pi-items-head">
+        <span>Beschreibung</span><span>Menge</span><span>Einzelpreis</span><span>Gesamt</span>
+      </div>
+      ${inv.positions.map(p => `<div class="pi-item-row"><span>${p.desc||'—'}</span><span>${p.qty}</span><span>${eur(p.price)}</span><span>${eur(p.qty*p.price)}</span></div>`).join('')}`;
+  }
+
+  save();
+  renderHistoryList();
+}
+
+function updateInvField(field, val) {
+  const inv = getInvoice(state.currentInvoiceId);
+  if (!inv) return;
+  inv[field] = val;
+  save();
+  renderHistoryList();
+  renderInvoiceEditor();
+}
+
+// ══════════════════════════════════════════
+// PDF EXPORT
+// ══════════════════════════════════════════
+function printInvoice() {
+  if (!state.currentInvoiceId) { alert('Bitte zuerst eine Rechnung öffnen.'); return; }
+  window.print();
+}
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+load();
+renderCustomerList();
+renderHistoryList();
+if (state.currentInvoiceId && getInvoice(state.currentInvoiceId)) {
+  renderInvoiceEditor();
+}
+</script>
+</body>
+</html>
