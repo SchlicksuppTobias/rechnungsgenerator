@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rechnungsgenerator</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ═══════════ TOPBAR ═══════════ -->
+<header class="topbar">
+  <div class="topbar-brand">
+    <span class="dot"></span>
+    Rechnungsgenerator
+  </div>
+  <div class="topbar-actions">
+    <button class="btn btn-ghost" onclick="openCustomerModal()">＋ Kunde</button>
+    <button class="btn btn-ghost" onclick="newInvoice()">＋ Rechnung</button>
+    <button class="btn btn-gold" onclick="printInvoice()">⬇ PDF Export</button>
+  </div>
+</header>
+
+<!-- ═══════════ SIDEBAR ═══════════ -->
+<aside class="sidebar">
+
+  <!-- Sender -->
+  <div class="sidebar-section">
+    <div class="sidebar-title">Mein Unternehmen</div>
+    <div class="field-group">
+      <div class="field">
+        <label>Firmenname</label>
+        <input type="text" id="s-company" placeholder="Muster GmbH" oninput="renderPreview()">
+      </div>
+      <div class="field">
+        <label>Adresse</label>
+        <textarea id="s-address" rows="3" placeholder="Musterstraße 1&#10;12345 Berlin" oninput="renderPreview()"></textarea>
+      </div>
+      <div class="field">
+        <label>USt-IdNr.</label>
+        <input type="text" id="s-vat" placeholder="DE123456789" oninput="renderPreview()">
+      </div>
+      <div class="field">
+        <label>IBAN</label>
+        <input type="text" id="s-iban" placeholder="DE89 3704 0044 0532 0130 00" oninput="renderPreview()">
+      </div>
+    </div>
+  </div>
+
+  <!-- Customers -->
+  <div class="sidebar-section">
+    <div class="sidebar-title">
+      Kunden
+      <button class="btn btn-sm btn-primary" onclick="openCustomerModal()">＋</button>
+    </div>
+    <div id="customer-list">
+      <div style="font-family:var(--mono);font-size:.72rem;color:var(--muted);">Noch keine Kunden.</div>
+    </div>
+  </div>
+
+  <!-- Invoice History -->
+  <div class="sidebar-section">
+    <div class="sidebar-title">Rechnungen</div>
+    <div id="history-list">
+      <div style="font-family:var(--mono);font-size:.72rem;color:var(--muted);">Noch keine Rechnungen.</div>
+    </div>
+  </div>
+
+</aside>
+
+<!-- ═══════════ MAIN ═══════════ -->
+<main class="main" id="main-area">
+  <div class="empty-state">
+    <div class="icon">📄</div>
+    <p>Klicke auf „+ Rechnung" um zu beginnen</p>
+  </div>
+</main>
+
+<!-- ═══════════ CUSTOMER MODAL ═══════════ -->
+<div class="modal-overlay" id="customer-modal">
+  <div class="modal">
+    <h3>Neuer Kunde</h3>
+    <div class="field-group">
+      <div class="field"><label>Firmenname / Name</label><input type="text" id="cm-name" placeholder="Kunde AG"></div>
+      <div class="field"><label>Anschrift</label><textarea id="cm-address" rows="3" placeholder="Straße, PLZ Ort"></textarea></div>
+      <div class="field"><label>E-Mail</label><input type="email" id="cm-email" placeholder="kontakt@kunde.de"></div>
+      <div class="field"><label>USt-IdNr. (optional)</label><input type="text" id="cm-vat" placeholder="DE..."></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" style="background:var(--faint);color:var(--ink);border:none;" onclick="closeCustomerModal()">Abbrechen</button>
+      <button class="btn btn-primary" onclick="saveCustomer()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
